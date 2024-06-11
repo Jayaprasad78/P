@@ -16,6 +16,21 @@ app.set('views',path.join(__dirname,'views'))
 // app.use(E.static(path.join(__dirname, 'public')));
 
 
+const cors = require('cors');
+
+
+// Create Express app
+const app = express();
+app.use(cors(
+    {
+        origin: ["https://curdavishkaritservice.vercel.app"],
+        methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow DELETE method
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true
+    }
+));
+
+
 app.get('/',(req,res)=>{
   res.json("hello home page");
 })
