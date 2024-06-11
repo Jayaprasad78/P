@@ -1,121 +1,99 @@
-require('./db/connection')
-const model_cons = require('./schema/schema')
-
-const bc=require('bcrypt')
-
-const E = require('express')
-const app = E();
-const bp = require('body-parser')
-app.use(bp.urlencoded({ extended: true }));
-app.use(bp.json())
-
-const path=require('path')
-const ejs=require('ejs')
-app.set('view engine', 'ejs');
-app.set('views',path.join(__dirname,'views'))
-// app.use(E.static(path.join(__dirname, 'public')));
-
-
+require('./db/connection');
+const model_cons = require('./schema/schema');
+const bcrypt = require('bcrypt');
+const express = require('express');
+const bodyParser = require('body-parser');
+const path = require('path');
 const cors = require('cors');
 
-
-// Create Express app
 const app = express();
-app.use(cors(
-    {
-        origin: ["https://curdavishkaritservice.vercel.app"],
-        methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow DELETE method
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true
-    }
-));
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-app.get('/',(req,res)=>{
-  res.json("hello home page");
-})
+// CORS setup
+app.use(cors({
+    origin: ["https://curdavishkaritservice.vercel.app"],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 
+// Serve static files
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/', (req, res) => {
+    res.json("Hello, home page!");
+});
 
 app.get('/home', (req, res) => {
-   res.render('home')
-})
+    res.render('home');
+});
 
 app.get('/signin', (req, res) => {
-   res.render('signin')
-})
+    res.render('signin');
+});
+
 app.get('/signup', (req, res) => {
-   res.render('signup')
-})
+    res.render('signup');
+});
 
-//Register Route
-app.post('/reg',async(req, res) => {
+// Register Route
+app.post('/reg', async (req, res) => {
+    const { name, email, job, password, cpassword } = req.body;
 
-   if(!req.body.name || !req.body.email || !req.body.job || !req.body.password || !req.body.cpassword)
-      {
-         return  res.send("kindly fill all the felids")
-      }
+    if (!name || !email || !job || !password || !cpassword) {
+        return res.send("Kindly fill all the fields");
+    }
 
-   const emailexist =  await model_cons.findOne({ email: req.body.email})
-   if(emailexist)
-      {
-         return res.send("email id is exist ,kindly register with different email id")
-      }
-   else if(req.body.password != req.body.cpassword )
-      {
-         return res.send("password not matching with conifrm password")
-      }
-      else
-      {
+    const emailexist = await model_cons.findOne({ email });
+    if (emailexist) {
+        return res.send("Email id exists, kindly register with a different email id");
+    } else if (password !== cpassword) {
+        return res.send("Password not matching with confirm password");
+    } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-
-         const name = req.body.name
-         const email = req.body.email
-         const job = req.body.job
-         const password = req.body.password
-         const cpassword = req.body.cpassword
-
-
-         console.log(name)
-         // const hashedpassword=  await bc.hash(password,10)
-
-         const template = model_cons({
+        const template = new model_cons({
             name,
             email,
             job,
-            password,
-            cpassword
-         })
-         template.save()
-         return res.send("registration sucess")
-      }
-})
+            password: hashedPassword,
+            cpassword: hashedPassword
+        });
 
-//Login Route
-app.post('/login', async(req,res) => {
-   const emailexist=  await model_cons.findOne({email:req.body.email})
-   // const password_match= bp.compare(req.body.password,emailexist.password)
-   if(!emailexist)
-      {
-         return res.send("user not exist ,kindly register first")
-      }
-   else if (req.body.password!=emailexist.password)
-      {
-         return res.send("password incorrect")
-      }
-      else
-      {
-         return res.send("singed in ")
-      } 
-})
+        await template.save();
+        return res.send("Registration success");
+    }
+});
 
-app.get('*',(req,res)=>{
-   res.send(" sorry this page is not found")
-})
+// Login Route
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    const user = await model_cons.findOne({ email });
+
+    if (!user) {
+        return res.send("User not exist, kindly register first");
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+        return res.send("Password incorrect");
+    }
+
+    return res.send("Signed in");
+});
+
+app.get('*', (req, res) => {
+    res.send("Sorry, this page is not found");
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-   console.log("my server is running on 3000 port")
-})
+    console.log(`Server is running on port ${PORT}`);
+});
 
 
 
