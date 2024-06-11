@@ -16,7 +16,9 @@ app.set('views',path.join(__dirname,'views'))
 // app.use(E.static(path.join(__dirname, 'public')));
 
 
-
+app.get('/',(req,res)=>{
+  res.json("hello home page");
+})
 
 
 app.get('/home', (req, res) => {
