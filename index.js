@@ -16,13 +16,11 @@ app.set('views',path.join(__dirname,'views'))
 
 
 
+
+
+
+
 app.get('/', (req, res) => {
-    res.json("Hello, home page!");
-});
-
-
-
-app.get('/home', (req, res) => {
    res.render('home')
 })
 
